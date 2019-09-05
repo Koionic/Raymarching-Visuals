@@ -17,12 +17,16 @@
 			#pragma target 3.0
 
             #include "UnityCG.cginc"
+			#include "DistanceFunctions.cginc"
 
 			sampler2D _MainTex;
+			uniform sampler2D _CameraDepthTexture;
 			uniform float4x4 _CamFrustum, _CamToWorld;
 			uniform float _maxDistance;
-			uniform float4 _sphere1;
+			uniform float4 _sphere1, _box1;
+			uniform float3 _modInterval;
 			uniform float3 _LightDir;
+			uniform fixed4 _mainColor;
 
             struct appdata
             {
@@ -54,18 +58,16 @@
                 return o;
             }
 
-			//p = position, s = scale/radius
-			float sdSphere(float3 p, float s)
-			{
-				return length(p) - s;
-			}
-
 			//p = position
 			//THIS IS WHERE YOU PUT THE SHAPES
 			float distanceField(float3 p)
 			{
+				float modX = pMod1(p.x, _modInterval.x);
+				float modY = pMod1(p.y, _modInterval.y);
+				float modZ = pMod1(p.z, _modInterval.z);
 				float Sphere1 = sdSphere(p - _sphere1.xyz, _sphere1.w);
-				return Sphere1;
+				float Box1 = sdBox(p - _box1.xyz, _box1.www);
+				return opI(Sphere1, Box1);
 			}
 
 			//p = position
@@ -80,18 +82,18 @@
 			}
 
 			//ro = ray origin, rd = ray direction
-			fixed4 raymarching(float3 ro, float3 rd)
+			fixed4 raymarching(float3 ro, float3 rd, float depth)
 			{
 				fixed4 result = fixed4(1, 1, 1, 1);
-				const int max_iteration = 128;
+				const int max_iteration = 256;
 				float t = 0; //distance travelled along the ray direction
 
 				for (int i = 0; i < max_iteration; i++)
 				{
-					if (t > _maxDistance)
+					if (t > _maxDistance || t >= depth)
 					{
 						//Environment
-						result = fixed4(rd,1);
+						result = fixed4(rd,0);
 						break;
 					}
 
@@ -104,7 +106,7 @@
 						float3 n = getNormal(p);
 						float light = dot(-_LightDir, n);
 
-						result = fixed4(1,1,1,1) * light;
+						result = fixed4(_mainColor.rgb * light,1);
 						break;
 					}
 
@@ -117,10 +119,13 @@
 
             fixed4 frag (v2f i) : SV_Target
             {
+				float depth = LinearEyeDepth(tex2D(_CameraDepthTexture, i.uv).r);
+				depth += length(i.ray);
+				fixed3 col = tex2D(_MainTex, i.uv);
 				float3 rayDirection = normalize(i.ray.xyz);
 				float3 rayOrigin = _WorldSpaceCameraPos;
-				fixed4 result = raymarching(rayOrigin, rayDirection);
-				return result;
+				fixed4 result = raymarching(rayOrigin, rayDirection, depth);
+				return fixed4(col * (1.0 - result.w) + result.xyz * result.w,1.0);
             }
             ENDCG
         }
