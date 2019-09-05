@@ -38,6 +38,11 @@ public class RayMarchCamera : MonoBehaviour
 
     private Camera _cam;
 
+    public Transform _directionLight;
+
+    public float _maxDistance;
+    public Vector4 _sphere1;
+
     private void OnRenderImage(RenderTexture source, RenderTexture destination)
     {
         if (!_raymarchMaterial)
@@ -48,7 +53,9 @@ public class RayMarchCamera : MonoBehaviour
 
         _raymarchMaterial.SetMatrix("_CamFrustum", CamFrustum(_camera));
         _raymarchMaterial.SetMatrix("_CamToWorld", _camera.cameraToWorldMatrix);
-        _raymarchMaterial.SetVector("_CamWorldSpace", _camera.transform.position);
+        _raymarchMaterial.SetFloat("_maxDistance", _maxDistance);
+        _raymarchMaterial.SetVector("_sphere1", _sphere1);
+        _raymarchMaterial.SetVector("_LightDir", _directionLight ? _directionLight.forward : Vector3.down);
 
         RenderTexture.active = destination;
         GL.PushMatrix();
