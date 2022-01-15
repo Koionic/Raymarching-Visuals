@@ -2,13 +2,15 @@
 #
 # Get latest from https://github.com/github/gitignore/blob/master/Unity.gitignore
 #
-/[Ll]ibrary/
+[Ll]ibrary/
 /[Tt]emp/
-/[Oo]bj/
-/[Bb]uild/
-/[Bb]uilds/
-/[Ll]ogs/
+[Oo]bj/
+[Bb]uild/
+[Bb]uilds/
+[Ll]ogs/
 /[Mm]emoryCaptures/
+UserSettings/
+
 
 # Never ignore Asset meta data
 !/[Aa]ssets/**/*.meta
@@ -45,6 +47,8 @@ ExportedObj/
 *.mdb
 *.opendb
 *.VC.db
+*.xml
+*.idea
 
 # Unity3D generated meta files
 *.pidb.meta
@@ -61,3 +65,5 @@ sysinfo.txt
 # Crashlytics generated file
 crashlytics-build.properties
 
+/FractalWars/Assets/Plugins.meta
+/FractalWars/Assets/Plugins/Editor.meta
