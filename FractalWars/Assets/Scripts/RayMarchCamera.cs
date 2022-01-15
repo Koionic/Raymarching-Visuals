@@ -1,5 +1,7 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
+using Unity.Mathematics;
 using UnityEngine;
 
 [RequireComponent(typeof(Camera))]
@@ -46,6 +48,8 @@ public class RayMarchCamera : SceneViewFilter
     public Vector4 _box1;
     public Vector3 _modInterval;
 
+    public Vector4[] spheres = new Vector4[3];
+        
     private void OnRenderImage(RenderTexture source, RenderTexture destination)
     {
         if (!_raymarchMaterial)
@@ -62,6 +66,10 @@ public class RayMarchCamera : SceneViewFilter
         _raymarchMaterial.SetColor("_mainColor", _mainColor);
         _raymarchMaterial.SetVector("_box1", _box1);
         _raymarchMaterial.SetVector("_modInterval", _modInterval);
+        
+        _raymarchMaterial.SetVector("_sphereObj1", spheres[0]);
+        _raymarchMaterial.SetVector("_sphereObj2", spheres[1]);
+        _raymarchMaterial.SetVector("_sphereObj3", spheres[2]);
 
         RenderTexture.active = destination;
         _raymarchMaterial.SetTexture("_MainTex", source);

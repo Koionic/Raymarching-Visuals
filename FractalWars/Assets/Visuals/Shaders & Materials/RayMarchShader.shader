@@ -28,6 +28,19 @@
 			uniform float3 _LightDir;
 			uniform fixed4 _mainColor;
 
+            uniform float4 _sphereObj1;
+            uniform float4 _sphereObj2;
+            uniform float4 _sphereObj3;
+
+            uniform bool addObjects = true;
+
+            uniform int colourIndex = 0;
+
+            uniform fixed4 _color1 = (1,0,0,1);
+            uniform fixed4 _color2 = (0,1,0,1);
+            uniform fixed4 _color3 = (0,0,1,1);
+            uniform fixed4 _color4 = (1,0,0,1);
+
             struct appdata
             {
                 float4 vertex : POSITION;
@@ -58,22 +71,57 @@
                 return o;
             }
 
+            float addSphere(float d, float3 p, float4 obj)
+            {
+            	float Sphere = sdSphere(p - obj.xyz, obj.w);
+            	
+            	d = opU(d, Sphere);
+
+            	if (d < 0.01) //hit is detected
+            	{
+            		colourIndex++;
+            	}
+
+            	return d;
+            }
+
+            float distanceFieldObjs(float d, float3 p)
+            {
+            	d = addSphere(d, p, _sphereObj1);
+            	//d = opU(d, _sphereObj2);
+            	//d = opU(d, _sphereObj3);
+
+            	return d;
+            }
+
+
+            
 			//p = position
 			//THIS IS WHERE YOU PUT THE SHAPES
 			float distanceField(float3 p)
 			{
+				float3 originalP = p;
+            	
 				float modX = pMod1(p.x, _modInterval.x);
 				float modY = pMod1(p.y, _modInterval.y);
 				float modZ = pMod1(p.z, _modInterval.z);
 				float Sphere1 = sdSphere(p - _sphere1.xyz, _sphere1.w);
 				float Box1 = sdBox(p - _box1.xyz, _box1.www);
-				return opI(Sphere1, Box1);
+
+				float finalD = opS(Sphere1, Box1);
+
+            	if (finalD < 0.01) //hit is detected
+            	{
+            		colourIndex = 0;
+            	}
+            	
+            	return distanceFieldObjs(finalD, originalP);
 			}
 
 			//p = position
 			float3 getNormal(float3 p)
 			{
-				const float2 offset = float2(0.001, 0.0);
+				const float2 offset = float2(0.1, 0.0);
 				float3 n = float3(
 					distanceField(p + offset.xyy) - distanceField(p - offset.xyy),
 					distanceField(p + offset.yxy) - distanceField(p - offset.yxy),
@@ -99,6 +147,7 @@
 
 					float3 p = ro + rd * t;
 					//check for hit in distancefield
+					
 					float d = distanceField(p);
 					if (d < 0.01) //hit is detected
 					{
@@ -106,7 +155,23 @@
 						float3 n = getNormal(p);
 						float light = dot(-_LightDir, n);
 
-						result = fixed4(_mainColor.rgb * light,1);
+						fixed4 col = (1,1,1,1);
+						
+						if (colourIndex == 0)
+						{
+							col = (0,1,1,1);
+						}
+						else if (colourIndex == 1)
+						{
+							col = fixed4(1,0,1,1);
+						}
+						else if (colourIndex == 2)
+						{
+							col = fixed4(0,0,1,1);
+						}
+						
+						result = fixed4(col.rgb * n * light, 1);
+						//result = fixed4(_mainColor.rgb * light, 1);
 						break;
 					}
 
