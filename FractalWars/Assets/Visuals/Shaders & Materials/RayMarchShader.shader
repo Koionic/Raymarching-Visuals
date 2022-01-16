@@ -149,6 +149,12 @@
             	//Directional Light
             	float3 light = (_LightCol * dot(-_LightDir, n) * 0.5 + 0.5) * _LightIntensity;
 
+				float4 tex = (0,0,0,0);
+            	tex.xyz = n;
+            	tex.y += _SinTime.x;
+            	
+				color *= tex2Dlod(_envTex, -tex);
+            	
             	result = color * light;
 
             	return result;
