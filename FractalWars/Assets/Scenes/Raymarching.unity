@@ -38,7 +38,7 @@ RenderSettings:
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
   m_Sun: {fileID: 0}
-  m_IndirectSpecularColor: {r: 0.45020664, g: 0.5002435, b: 0.5753941, a: 1}
+  m_IndirectSpecularColor: {r: 0.45020783, g: 0.5002478, b: 0.57539475, a: 1}
   m_UseRadianceAmbientProbe: 0
 --- !u!157 &3
 LightmapSettings:
@@ -210,14 +210,14 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 673560996}
-  m_LocalRotation: {x: -0.33620718, y: 0.16411737, z: 0.024219442, w: -0.9270619}
+  m_LocalRotation: {x: -0.1945858, y: -0.6124479, z: 0.27523905, w: -0.71504366}
   m_LocalPosition: {x: 0, y: 3, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
   m_RootOrder: 1
-  m_LocalEulerAnglesHint: {x: 142.018, y: -923.999, z: 168.63899}
+  m_LocalEulerAnglesHint: {x: 142.018, y: -822.76, z: 168.63899}
 --- !u!1 &1312041634
 GameObject:
   m_ObjectHideFlags: 0
@@ -316,13 +316,22 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _shader: {fileID: 4800000, guid: 599d45f4bd93cba40bcf6005c3134877, type: 3}
+  maxIterations: 184
+  accuracy: 0.001
+  _maxDistance: 474.89
   _directionLight: {fileID: 673560998}
-  _maxDistance: 475.03
-  _mainColor: {r: 0.9528302, g: 0.15730685, b: 0.15730685, a: 0}
+  LightColor: {r: 1, g: 0, b: 0, a: 1}
+  LightIntensity: 0.491
+  ColorIntensity: 0.94
+  envTexture: {fileID: 2800000, guid: b7110a9664eeb4748a49c874d7e84df3, type: 3}
+  _mainColor: {r: 1, g: 0.11792451, b: 0.11792451, a: 1}
   _sphere1: {x: 0, y: 0, z: 0, w: 1.25}
   _box1: {x: 0, y: 0, z: 0, w: 1}
   _modInterval: {x: 2, y: 2, z: 2}
   spheres:
-  - {x: -0.14, y: 0, z: -8.44, w: 0.43}
-  - {x: 0, y: 0, z: 0, w: 0}
-  - {x: 0, y: 0, z: 0, w: 0}
+  - transform: {x: 1.97, y: 0, z: -7.45, w: 0.49}
+    color: {r: 1, g: 0, b: 1, a: 0}
+  - transform: {x: -0.23, y: 0, z: -7.22, w: 0.49}
+    color: {r: 0.15686275, g: 1, b: 0.56078434, a: 0}
+  - transform: {x: -2.02, y: -0.32, z: -7.45, w: 0.49}
+    color: {r: 1, g: 0, b: 0, a: 0}

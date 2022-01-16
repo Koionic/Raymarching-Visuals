@@ -16,18 +16,28 @@
             #pragma fragment frag
 			#pragma target 3.0
 
+
+            
             #include "UnityCG.cginc"
 			#include "DistanceFunctions.cginc"
 
 			sampler2D _MainTex;
 			uniform sampler2D _CameraDepthTexture;
 			uniform float4x4 _CamFrustum, _CamToWorld;
+
+			uniform int _MaxIterations;
+            uniform float _Accuracy;
+            
 			uniform float _maxDistance;
 			uniform float4 _sphere1, _box1;
 			uniform float3 _modInterval;
 			uniform float3 _LightDir;
-			uniform fixed4 _mainColor;
+            uniform float3 _LightCol;
+			uniform float3 _mainColor;
 
+			uniform float _LightIntensity;
+			uniform float _ColorIntensity;
+            
             uniform float4 _sphereObj1;
             uniform float4 _sphereObj2;
             uniform float4 _sphereObj3;
@@ -36,10 +46,11 @@
 
             uniform int colourIndex = 0;
 
-            uniform fixed4 _color1 = (1,0,0,1);
-            uniform fixed4 _color2 = (0,1,0,1);
-            uniform fixed4 _color3 = (0,0,1,1);
-            uniform fixed4 _color4 = (1,0,0,1);
+            uniform sampler2D _envTex;
+
+            uniform float3 _sphereColor1;
+            uniform float3 _sphereColor2;
+            uniform float3 _sphereColor3;
 
             struct appdata
             {
@@ -71,115 +82,114 @@
                 return o;
             }
 
-            float addSphere(float d, float3 p, float4 obj)
+            float4 addSphere(float4 d, float3 p, float4 obj, fixed3 newCol)
             {
-            	float Sphere = sdSphere(p - obj.xyz, obj.w);
+            	float4 Sphere;
+            	Sphere.xyz = newCol;
+            	Sphere.w = sdSphere(p - obj.xyz, obj.w);
             	
-            	d = opU(d, Sphere);
-
-            	if (d < 0.01) //hit is detected
-            	{
-            		colourIndex++;
-            	}
-
-            	return d;
+            	return opU(d, Sphere);
             }
 
-            float distanceFieldObjs(float d, float3 p)
+            float4 distanceFieldObjs(float4 d, float3 p)
             {
-            	d = addSphere(d, p, _sphereObj1);
+            	float4 newD;
+            	
+            	newD = addSphere(d, p, _sphereObj1, _sphereColor1);
+            	newD = addSphere(newD, p, _sphereObj2, _sphereColor2);
+            	newD = addSphere(newD, p, _sphereObj3, _sphereColor3);
             	//d = opU(d, _sphereObj2);
             	//d = opU(d, _sphereObj3);
 
-            	return d;
+            	return newD;
             }
 
 
             
 			//p = position
 			//THIS IS WHERE YOU PUT THE SHAPES
-			float distanceField(float3 p)
+			float4 distanceField(float3 p)
 			{
 				float3 originalP = p;
             	
 				float modX = pMod1(p.x, _modInterval.x);
 				float modY = pMod1(p.y, _modInterval.y);
-				float modZ = pMod1(p.z, _modInterval.z);
+            	float modZ = pMod1(p.z, _modInterval.z);
+            	
 				float Sphere1 = sdSphere(p - _sphere1.xyz, _sphere1.w);
 				float Box1 = sdBox(p - _box1.xyz, _box1.www);
 
-				float finalD = opS(Sphere1, Box1);
+				float4 d;
 
-            	if (finalD < 0.01) //hit is detected
-            	{
-            		colourIndex = 0;
-            	}
-            	
-            	return distanceFieldObjs(finalD, originalP);
+            	d.xyz = _mainColor;
+            	d.w = opS(Sphere1, Box1);
+
+				d = distanceFieldObjs(d, originalP);
+
+            	return d;
 			}
 
 			//p = position
 			float3 getNormal(float3 p)
 			{
-				const float2 offset = float2(0.1, 0.0);
+				const float2 offset = float2(0.01, 0.0);
 				float3 n = float3(
-					distanceField(p + offset.xyy) - distanceField(p - offset.xyy),
-					distanceField(p + offset.yxy) - distanceField(p - offset.yxy),
-					distanceField(p + offset.yyx) - distanceField(p - offset.yyx));
+					distanceField(p + offset.xyy).w - distanceField(p - offset.xyy).w,
+					distanceField(p + offset.yxy).w - distanceField(p - offset.yxy).w,
+					distanceField(p + offset.yyx).w - distanceField(p - offset.yyx).w);
 				return normalize(n);
 			}
 
+            float3 Shading(float3 p, float3 n, fixed3 c)
+            {
+	            float3 result;
+
+            	//Diffuse Color
+            	float3 color = c.rgb * _ColorIntensity;
+            	//Directional Light
+            	float3 light = (_LightCol * dot(-_LightDir, n) * 0.5 + 0.5) * _LightIntensity;
+
+            	result = color * light;
+
+            	return result;
+            }
+
 			//ro = ray origin, rd = ray direction
-			fixed4 raymarching(float3 ro, float3 rd, float depth)
+			bool raymarching(float3 ro, float3 rd, float depth, inout float3 p, inout fixed3 dColor)
 			{
-				fixed4 result = fixed4(1, 1, 1, 1);
-				const int max_iteration = 256;
+				bool hit = false;
+            	
+				//fixed4 result = fixed4(1, 1, 1, 1);
 				float t = 0; //distance travelled along the ray direction
 
-				for (int i = 0; i < max_iteration; i++)
+				for (int i = 0; i < _MaxIterations; i++)
 				{
 					if (t > _maxDistance || t >= depth)
 					{
 						//Environment
-						result = fixed4(rd,0);
+						hit = false;
+						//result = fixed4(rd,0);
 						break;
 					}
 
-					float3 p = ro + rd * t;
+					p = ro + rd * t;
 					//check for hit in distancefield
 					
-					float d = distanceField(p);
-					if (d < 0.01) //hit is detected
+					float4 d = distanceField(p);
+					if (d.w < _Accuracy) //hit is detected
 					{
-						//shading
-						float3 n = getNormal(p);
-						float light = dot(-_LightDir, n);
-
-						fixed4 col = (1,1,1,1);
-						
-						if (colourIndex == 0)
-						{
-							col = (0,1,1,1);
-						}
-						else if (colourIndex == 1)
-						{
-							col = fixed4(1,0,1,1);
-						}
-						else if (colourIndex == 2)
-						{
-							col = fixed4(0,0,1,1);
-						}
-						
-						result = fixed4(col.rgb * n * light, 1);
+						hit = true;
+						dColor = d.xyz;
 						//result = fixed4(_mainColor.rgb * light, 1);
 						break;
 					}
+										
 
-					t += d;
+					t += d.w;
 				}
 
 
-				return result;
+				return hit;
 			}
 
             fixed4 frag (v2f i) : SV_Target
@@ -189,7 +199,26 @@
 				fixed3 col = tex2D(_MainTex, i.uv);
 				float3 rayDirection = normalize(i.ray.xyz);
 				float3 rayOrigin = _WorldSpaceCameraPos;
-				fixed4 result = raymarching(rayOrigin, rayDirection, depth);
+				fixed4 result;
+            	float3 hitPosition;
+            	fixed3 dColor = _mainColor;
+
+            	bool hit = raymarching(rayOrigin, rayDirection, depth, hitPosition, dColor);
+
+            	if (hit)
+            	{
+            		float3 n = getNormal(hitPosition);
+            		float3 s = Shading(hitPosition, n, dColor);
+
+            		result = fixed4(s,1);
+            	}
+            	else
+            	{
+            		result = fixed4(0,0,0,0);
+            	}
+
+            	//return result;
+				//fixed4 result = raymarching(rayOrigin, rayDirection, depth);
 				return fixed4(col * (1.0 - result.w) + result.xyz * result.w,1.0);
             }
             ENDCG
