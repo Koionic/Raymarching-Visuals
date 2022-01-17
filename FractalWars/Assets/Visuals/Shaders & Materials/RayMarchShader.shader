@@ -42,6 +42,8 @@
             uniform float4 _sphereObj2;
             uniform float4 _sphereObj3;
 
+			uniform float4 _roundBoxObj1;
+            
             uniform bool addObjects = true;
 
             uniform int colourIndex = 0;
@@ -51,6 +53,9 @@
             uniform float3 _sphereColor1;
             uniform float3 _sphereColor2;
             uniform float3 _sphereColor3;
+
+            uniform float3 _roundBoxColor1;
+            uniform float _roundBoxSmooth1;
 
             struct appdata
             {
@@ -91,13 +96,24 @@
             	return opU(d, Sphere);
             }
 
-            float4 distanceFieldObjs(float4 d, float3 p)
+            float4 addRoundBox(float4 d, float3 p, float r, float4 obj, fixed3 newCol)
+            {
+            	float4 RoundBox;
+            	RoundBox.xyz = newCol;
+            	RoundBox.w = sdRoundBox(p - obj.xyz, obj.w, r);
+            	
+            	return opU(d, RoundBox);
+            }
+
+            float4 distanceFieldObjs(float4 d, float3 p, float r)
             {
             	float4 newD;
             	
             	newD = addSphere(d, p, _sphereObj1, _sphereColor1);
             	newD = addSphere(newD, p, _sphereObj2, _sphereColor2);
             	newD = addSphere(newD, p, _sphereObj3, _sphereColor3);
+
+            	newD = addRoundBox(newD, p, r, _roundBoxObj1, _roundBoxColor1);
             	//d = opU(d, _sphereObj2);
             	//d = opU(d, _sphereObj3);
 
@@ -124,7 +140,7 @@
             	d.xyz = _mainColor;
             	d.w = opS(Sphere1, Box1);
 
-				d = distanceFieldObjs(d, originalP);
+				d = distanceFieldObjs(d, originalP, _roundBoxSmooth1);
 
             	return d;
 			}

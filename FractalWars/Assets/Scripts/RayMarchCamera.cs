@@ -11,6 +11,14 @@ public class RaymarchSphere
     public Color color;
 }
 
+[System.Serializable]
+public class RaymarchRoundBox
+{
+    public Vector4 transform;
+    public float smoothness;
+    public Color color;
+}
+
 [RequireComponent(typeof(Camera))]
 [ExecuteInEditMode]
 public class RayMarchCamera : SceneViewFilter
@@ -76,6 +84,9 @@ public class RayMarchCamera : SceneViewFilter
 
     [Header("Spheres")]
     public RaymarchSphere[] spheres = new RaymarchSphere[3];
+
+    [Header("Round Box")] 
+    public RaymarchRoundBox[] roundBoxes = new RaymarchRoundBox[1];
         
     private void OnRenderImage(RenderTexture source, RenderTexture destination)
     {
@@ -116,6 +127,12 @@ public class RayMarchCamera : SceneViewFilter
         _raymarchMaterial.SetVector("_sphereColor2", spheres[1].color);
         _raymarchMaterial.SetVector("_sphereColor3", spheres[2].color);
 
+        _raymarchMaterial.SetVector("_roundBoxObj1", roundBoxes[0].transform);
+        
+        _raymarchMaterial.SetFloat("_roundBoxSmooth1", roundBoxes[0].smoothness);
+        
+        _raymarchMaterial.SetVector("_roundBoxColor1", roundBoxes[0].color);
+        
         RenderTexture.active = destination;
         _raymarchMaterial.SetTexture("_MainTex", source);
         GL.PushMatrix();
